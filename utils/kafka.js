@@ -28,6 +28,8 @@ export async function createProducer(){
         return producer;
     }
 
+    
+
     const _producer = kafka.producer()
     await _producer.connect();
     producer = _producer;
@@ -94,12 +96,26 @@ export async function startMessageConsumer(){
         
         }
     catch(err){
-                console.log(err);
-                pause();
-                setTimeout(()=>{
-                    consumer.resume({topic:"MESSAGES"});
-                },60*1000)
+
+        const { message, from, to } = data;
+        if (message && from && to) {
+            const prisma = getPrismaInstance();
+            const newMessage = await prisma.messages.create({
+                data: {
+                    message: message.message,
+                    sender: { connect: { id: parseInt(from) } },
+                    receiver: { connect: { id: parseInt(to) } },
+                    messageStatus: getUser ? 'delivered' : 'sent'
+                },
+                include: {
+                    sender: true,
+                    receiver: true
+                },
+            });
+
+            await commit();
             }
+        }
 
         }
     })
