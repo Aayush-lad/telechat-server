@@ -101,7 +101,7 @@ io.on('connection', (socket) => {
         //         from:data.from
         //     })
 
-     await produceMessage(data);
+    
             
         // }
 
@@ -124,8 +124,8 @@ io.on('connection', (socket) => {
 
                 prevMessage = message;
 
-            
-                console.log("Message sent to kafka");
+            await produceMessage(data);   
+            console.log("Message sent to kafka");
             }
         }
     });
