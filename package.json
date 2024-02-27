@@ -11,6 +11,7 @@
   "author": "Aayush-lad",
   "license": "MIT",
   "dependencies": {
+    "@azure/storage-blob": "^12.17.0",
     "@prisma/client": "^5.9.0",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",

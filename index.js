@@ -36,7 +36,7 @@ app.use(function(req, res, next) {
 });
 
 app.use("/uploads/images",express.static("uploads/images"))
-app.use("/uploads/audio",express.static("uploads/audio"))
+//app.use("/uploads/audio",express.static("uploads/audio"))
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -75,11 +75,14 @@ io.on('connection', (socket) => {
 
 
     socket.on("add-user",(userId)=>{
+        console.log("inside add user")
+        console.log(userId)
         onlineUsers.set(userId,socket.id);
         console.log(global.onlineUsers);
         socket.broadcast.emit("online-users",
             Array.from(onlineUsers.keys())
         )
+        
     })
 
     socket.on("logout",(userId)=>{
@@ -147,6 +150,7 @@ io.on('connection', (socket) => {
                 roomId:data.roomId
             })
         }
+        
     })
 
     socket.on("outgoing-video-call",(data)=>{
@@ -183,17 +187,9 @@ io.on('connection', (socket) => {
     })
 
     socket.on("accept-incoming-call",({id})=>{
-
         const sendUserSocket = onlineUsers.get(id);
         if(sendUserSocket){
             socket.to(sendUserSocket).emit("call-accepted");
         }
-    })
-
-    
+    }) 
 });
-
-
-
-
-

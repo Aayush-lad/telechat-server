@@ -63,7 +63,7 @@ export async function startMessageConsumer(){
             console.log("Message recieved from kafka");
             if(!message.value) return;
             const data = JSON.parse(message.value);
-            console.log(data);
+            console.log("inside consmer ",data);
             if(!data){
                 return;
             }
@@ -77,7 +77,9 @@ export async function startMessageConsumer(){
 
         const getUser = onlineUsers.get(to);
 
-        console.log("message : ",message.message);
+        console.log("message : ",message.type);
+
+        if(message.type==="text"){
 
         if (message && from && to) {
             const newMessage = await prisma.messages.create({
@@ -93,6 +95,7 @@ export async function startMessageConsumer(){
                 },
             });
         }
+    }
         
         }
     catch(err){
@@ -100,6 +103,8 @@ export async function startMessageConsumer(){
         const { message, from, to } = data;
         if (message && from && to) {
             const prisma = getPrismaInstance();
+
+            if(message.type!=="image" || message.type!=="audio"){
             const newMessage = await prisma.messages.create({
                 data: {
                     message: message.message,
@@ -115,6 +120,7 @@ export async function startMessageConsumer(){
 
             await commit();
             }
+        }
         }
 
         }

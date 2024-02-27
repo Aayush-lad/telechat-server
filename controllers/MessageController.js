@@ -1,5 +1,9 @@
 import getPrismaInstance from "../utils/PrismaClient.js";
 import fs from 'fs';
+import {BlobServiceClient} from  "@azure/storage-blob"
+
+const AZURE_STORAGE_CONNECTION_STRING = "DefaultEndpointsProtocol=https;AccountName=telechat;AccountKey=NR81xirDqnVsQhPSjpRSvp4n/LZUhopaTT1ey928d5FPMoxA629XqVtnA0VOGNWfGPWNDVZgBYku+AStHmZdFw==;EndpointSuffix=core.windows.net";
+const blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_STORAGE_CONNECTION_STRING);
 
 export const addMessage = async (req, res, next) => {
     try {
@@ -27,7 +31,7 @@ export const addMessage = async (req, res, next) => {
             });
 
 
-            // delete the message
+            // delete the message to avoid duplication from kafka 
 
             const deleteMessage = await prisma.messages.delete({
                 where: {
@@ -119,8 +123,20 @@ export const addImageMessage = async (req, res, next) => {
 
         if(req.file){
             const data = Date.now();
-            let filename = "uploads/images/"+data+req.file.originalname;
-            fs.renameSync(req.file.path,filename);
+            let filename = data + req.file.originalname;
+
+            const containerName = "telechat"
+
+            // storing image to azure blob storage container
+            const containerClient = blobServiceClient.getContainerClient(containerName);
+            const  blockBlobClient = containerClient.getBlockBlobClient(filename)
+
+           await blockBlobClient.uploadFile(req.file.path);
+
+           const imageUrl = await blockBlobClient.url;
+
+          console.log(imageUrl)
+    
             const prisma = getPrismaInstance();
             const {from,to} = req.query;
             
@@ -128,7 +144,7 @@ export const addImageMessage = async (req, res, next) => {
             if(from && to){
             const message = await prisma.messages.create({
                 data:{
-                    message:filename,
+                    message:imageUrl,
                     sender:{connect:{id:parseInt(from)}},
                     receiver:{connect:{id:parseInt(to)}},
                     type:"image"
@@ -150,37 +166,42 @@ export const addImageMessage = async (req, res, next) => {
 }
 
 
-export const addAudioMessage = async (req, res, next) => {
-    try{
+// export const addAudioMessage = async (req, res, next) => {
+//     try{
 
-        if(req.file){
-            const data = Date.now();
-            let filename = "uploads/audio/"+data+req.file.originalname.replace("_","-");
+//         if(req.file){
+//             const data = Date.now();
+//             let filename = data + req.file.originalname;
+//             const containerName = "telechat";
+//             const containerClient = blobServiceClient.getContainerClient(containerName);
+//             const  blockBlobClient = containerClient.getBlockBlobClient(filename)
 
-            fs.renameSync(req.file.path,filename); 
-            const prisma = getPrismaInstance();
-            const {from,to} = req.query;
-            if(from && to){
-                const message = await prisma.messages.create({
-                    data:{
-                        message:filename,
-                        sender:{connect:{id:parseInt(from)}},
-                        receiver:{connect:{id:parseInt(to)}},
-                        type:"audio"
-                    }
-                })
-                return res.status(201).send({message})
-            }
-            return res.status(400).send({message:"Invalid request"})
-        }
-        return res.status(400).send({message:"Invalid request"})
+//            await blockBlobClient.uploadFile(req.file.path);
+
+//            const audioUrl = await blockBlobClient.url;
+//             const prisma = getPrismaInstance();
+//             const {from,to} = req.query;
+//             if(from && to){
+//                 const message = await prisma.messages.create({
+//                     data:{
+//                         message:audioUrl,
+//                         sender:{connect:{id:parseInt(from)}},
+//                         receiver:{connect:{id:parseInt(to)}},
+//                         type:"audio"
+//                     }
+//                 })
+//                 return res.status(201).send({message})
+//             }
+//             return res.status(400).send({message:"Invalid request"})
+//         }
+//         return res.status(400).send({message:"Invalid request"})
     
-    }
+//     }
 
-    catch(err){
-        console.log(err)
-    }
-}
+//     catch(err){
+//         console.log(err)
+//     }
+// }
 
 
 export const getInitialContactsWithMessage = async (req, res, next) => {
@@ -324,16 +345,21 @@ export const searchMessages = async(req,res,next)=>{
             message=true
         }
 
+        console.log(image,audio,message,search)
+
     
         let responseMessages = [];
             for(let i = 0; i < messages.length; i++){
                 const msg = messages[i];
+                console.log(typeof audio)
+                if(image=="true" ){
+
+                    console.log(image , msg.type)
+                    if(msg.type === 'image')
+                    responseMessages.push(msg);
+                }
                 
-                if(image && msg.type === 'image'){
-                    responseMessages.push(msg);
-                }else if(audio && msg.type === 'audio'){
-                    responseMessages.push(msg);
-                }else if(msg.type === 'text'&& msg.message.includes(search)){
+                if(message==true&& msg.type === 'text'&& msg.message.includes(search) && !msg.message.startsWith("http://")){
 
                     console.log(search,msg.message,msg.message.includes(search));
                 
