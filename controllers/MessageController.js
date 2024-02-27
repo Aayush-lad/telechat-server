@@ -1,8 +1,11 @@
 import getPrismaInstance from "../utils/PrismaClient.js";
 import fs from 'fs';
 import {BlobServiceClient} from  "@azure/storage-blob"
+import dotenv from 'dotenv';
+dotenv.config();
 
-const AZURE_STORAGE_CONNECTION_STRING = "DefaultEndpointsProtocol=https;AccountName=telechat;AccountKey=NR81xirDqnVsQhPSjpRSvp4n/LZUhopaTT1ey928d5FPMoxA629XqVtnA0VOGNWfGPWNDVZgBYku+AStHmZdFw==;EndpointSuffix=core.windows.net";
+
+const AZURE_STORAGE_CONNECTION_STRING = process.env.AZURE_STORAGE_CONNECTION_STRING;
 const blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_STORAGE_CONNECTION_STRING);
 
 export const addMessage = async (req, res, next) => {
