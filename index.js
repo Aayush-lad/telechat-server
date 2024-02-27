@@ -124,14 +124,13 @@ io.on('connection', (socket) => {
 
                 prevMessage = message;
 
-            await produceMessage(data);   
+           
             console.log("Message sent to kafka");
             }
         }
     });
-
-
-
+    
+      await produceMessage(data); 
 
         })
 
